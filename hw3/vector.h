@@ -146,6 +146,13 @@ class Vector {
     return buf[i];
   }
  
+  T remove (const int i)
+  {
+    T val = buf[i];
+    buf[i] = NULL;
+    sz = sz -1;
+    return val;
+  }
 
   /**
    * Dot products the current vector with the passed vector.
