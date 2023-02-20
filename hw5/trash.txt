@@ -1,0 +1,310 @@
+
+;; takes a symbol and alist and returns the assocation of the symbol in the alist
+(defun my-assoc (v alist)
+  (cond
+    ( (null alist) nil) ; if we reach the end of the list
+    ;; compare v to the key of the key-value pair (nested car alist)
+    ;; and return the key-value pair (car alist)
+    ( (eq v (car (car alist))) (car alist) ) 
+    ( t (my-assoc v (cdr alist)) ) ; recurse on the remaining list if no association found
+  )
+)
+
+; [DONE] takes an expression and an alist and returns the evaluation
+; of that expression within that variable binding context. 
+
+(defun my-eval (e alist)
+    (cond 
+        ( (atom e) (my-eval-atom e alist) )
+        ( t (my-apply (car e) (cdr e) alist) )
+    )
+)
+
+;; evaluates all types of atoms (T, NIL, MY-SYMBOL, 10, "Hello")
+(defun my-eval-atom (e alist)
+    (cond
+      ( (null e) nil )  
+      ( (eq T e) T )
+      ( (numberp e) e )
+      ( (stringp e) e )
+      ( (symbolp e) (cdr (my-assoc e alist)) ) 
+      ( t 
+        e
+    )
+    )
+)
+
+;; [DONE] takes a function, a list of unevaluated actual parameters, and an alist, and applies that function to the evaluated arguments. It returns the value of the function body. The function may be a lambda or a symbol.  If the function is a symbol, it is a function name, and the function lambda will be in alist.  MY-APPLY should bind the formals to the evaluated actuals, then evaluate the lambda body in that scoping environment.
+
+;; NOTE: the function can be a lambda (value will be in alist) or symbol (aka CAR, CDR, EQ, etc)
+;; QUESTION: what does "bind the formals to the evaluated actuals" mean? 
+(defun my-apply (fn args alist)
+    ;; NOTE: fn is either an atom (i.e. a symbol like CAR, CDR) or a lambda
+    (cond 
+        ( (atom fn) (my-apply-atom fn args alist) )
+        ( t (my-apply-lambda fn args alist) ) ;; fn is the actual body definition of the lambda
+    )
+)
+
+;; helper function for eval-cond and apply-lambda. Evaluates each expression
+;; in l and returns the value of the last expression
+;; ex. l = (1 2 4 6 3) -> return 3
+(defun my-eval-list (l alist)
+    (print "my-eval-list")
+    (print l)
+    (print (cdr (my-assoc 'L alist)))
+    (cond
+        ( (null l) nil)
+        ( (null (cdr l)) 
+            (print "reached the last expression")
+            (print (car l))
+            (my-eval (car l) alist)
+        ) ;; reached the last expression; evaluate and return it
+        ( t 
+            (my-eval (car l) alist) ;; evaluate this element
+            (my-eval-list (cdr l) alist) ;; recurse on the remaining elements in list
+        )
+    )
+)
+
+;; You need to write this one.
+
+(defun my-apply-lambda (fn args alist)
+    nil
+;; bind the formals to the evaluated actuals then evaluate the body in that
+;; new scoping context (i.e., that becomes the new alist for recursive
+;; evaluation of the function body.  Return the value of the last 
+;; expression in the body (using eval-list)). Uses MY-BIND-FORMALS and MY-EVAL-LIST
+
+; Write MY-APPLY-LAMBDA that handles evaluation of user-defined function bodies. 
+
+;; if we have: 
+;; (defun rev (L R) (cond ((null L) R) (t (rev (cdr L) (cons (car L) R)))))
+;; (rev a nil)
+
+;; fn = ((L R) (cond ((null L) R) (t (rev (cdr L) (cons (car L) R)))))
+;; args = (a nil)
+;; (car fn) = (L R)
+
+; (cond (L R)
+;     ( (null L ) R)
+;     ( t (rev (cdr L) (cons (car L) R)))
+; )
+    (print "my-apply-lambda")
+     ;; (car fn) = formals/parameters, args = unevaluated actuals/values
+    (my-eval-list (cdr fn) (my-bind-formals (car fn) args alist)) ;; (cdr fn) = the body definiton without the formals
+
+)
+
+;; You need to write this one.
+
+(defun my-bind-formals (formals actuals alist)
+;; This takes a list of formals and unevaluated actuals.  It should evaluate
+;; each actual and bind it to its corresponding formal placing them all on
+;; the front of the alist.  It should return the alist with the new bindings
+;; on the front.  This will be used to evaluate calls to functions defined
+;; via defun.  MY-BIND-FORMALS is called by MY-APPLY-LAMBDA.
+;; e.g., (my-bind-formals '(a) '((add 1 b)) '((b . 10)))
+;; will return ((a . 11) (b . 10))
+;; Note there will be one actual parameter for each formal parameter.
+;; NOTE: a 'formal' is the name of a parameter and an 'actual' is 
+;; like an argument (i..e the actual value passed to the parameter)
+    
+    (cond
+        ( (null formals) alist ) ;; reached end of formals/actuals, return alist
+        ( t (setq alist (cons ( cons (car formals) (my-eval (car actuals) alist) ) alist))  ;; push the new binding (the formal and the evaluated actual) to alist
+            (my-bind-formals (cdr formals) (cdr actuals) alist) ;; recurse on the remaining formals and actuals
+        )
+    )
+)
+
+
+;; You need to write this one.  Handle the primitives as special cases, then
+;; handle user defined functions (defined via defun) in the default case.
+;; Handle car, cdr, cons, eq, quote, cond, defun, setq, eval, print, atom, null,
+;; listp, apply, equal, +, -, mod, floor and user defined functions (defined via defun).
+;; This should allow you to interpret your functions from HW4.
+
+;; NOTE: cadr is the car of the cdr of a list. so basically (car (cdr LIST))
+;; NOTE: for primitive functions, can just directly use them as they are built-in
+
+(defun my-apply-atom (fn args alist)
+    ;; QUESTION: do i need to use my-eval for all the arguments
+    ;; TODO: eval, apply
+
+    (cond 
+    
+        ((eq fn 'eq)
+            (eq (my-eval (car args) alist) (my-eval (cadr args) alist))  ;; compares first elem with second elem of the list
+        )
+        
+        ((eq fn '+)
+            (+ (my-eval (car args) alist) (my-eval (cadr args) alist))
+        )
+        
+        ((eq fn '-)
+            (- (my-eval (car args) alist) (my-eval (cadr args) alist))
+        )
+        
+        ((eq fn 'mod)
+            (mod (my-eval (car args) alist) (my-eval (cadr args) alist))
+        )
+        
+        ((eq fn 'floor)
+            (floor (my-eval (car args) alist) (my-eval (cadr args) alist))
+        )
+        
+        ((eq fn 'print)
+            (print (my-eval (car args) alist))
+        )
+        
+        ((eq fn 'atom)
+            (atom (my-eval (car args) alist))
+        )
+        
+        ((eq fn 'null)
+            (null (my-eval (car args) alist))
+        )
+        
+        ((eq fn 'listp)
+            (listp (my-eval (car args) alist))
+        )
+        
+        ((eq fn 'equal)
+            (equal (my-eval (car args) alist) (my-eval (cadr args) alist))
+        )
+          
+        ((eq fn 'car)
+            (car (my-eval (car args) alist)) ;; args is a list; need to apply function on the first element
+        )
+          
+        ((eq fn 'cdr)
+            (cdr (my-eval (car args) alist)) ;; args is a list; need to apply function on the first element
+        )
+        
+        ((eq fn 'cons)
+            (cons (my-eval (car args) alist) (my-eval (cadr args) alist))
+        )
+        
+        ((eq fn 'quote)
+            (car args)
+        )
+        
+        ((eq fn 'setq) 
+            ;; (setq a '(a b c)) -> "a" = first arg and "'(a b c)" = second arg
+            (my-eval-setq (car args) (my-eval (cadr args) alist)) ;; NOTE: didn't evaluate the symnbol
+        )
+        
+        ((eq fn 'cond) 
+            (my-eval-cond args alist)
+        )
+        
+        ((eq fn 'defun) 
+            (my-eval-defun args alist)
+        )
+    
+        ((eq fn 'eval) 
+            (my-eval (car args) alist)
+        )
+        
+        ;; TODO: this is confusing...
+        ;; if this is a user-defined function (ex. "(rev a nil)") 
+        ;; then get the lambda body definition for "rev" via my-assoc (car args = rev)
+        ;; pass in the name of the function as the symbol to my-assoc
+        ;; the first argument of my-apply is the body definition of rev
+        ;; the second argument of my-apply is (a nil)
+        ;; the third argument of my-apply is the local assoc list
+        ;; my-assoc returns (key . value) -> but we want value hence the cdr
+        (T 
+            (my-apply (cdr (my-assoc fn alist)) args alist)
+        )
+    )
+)
+
+
+;; setq and defun will push a new association on the global-alist.
+;; whenever we apply a function, we will bind the formals to the evaluated
+;; actuals pushing these new bindings onto the local alist and then
+;; evaluate the body of the function in that new scoping context.
+
+;; ------------
+
+; takes a var and a val and changes the value of var to be the evaluated val
+;; MY-EVAL-SETQ is called by MY-APPLY-ATOM when the function is SETQ. 
+;; MY-EVAL-SETQ must change the value association on the global alist 
+;; using SETQ. SETQ returns the evaluated second argument, 
+;; which must also be returned from MY-EVAL-SETQ.
+
+(defun my-eval-setq (var val)
+    ;; QUESTION: do we have to evaluate the val? how do we evaluate the val first?
+    ;; QUESTION: what is the single quote in var and val for?
+    ;; create a new association list from newvar and newval
+    ;; push the new association list onto the current global-alist via SETQ
+    ;; returns the evaluated second argument
+    ( setq global-alist (cons (cons var val) global-alist) )
+    val
+)
+
+;; You need to write this one.  You should know how cond works at this point.
+;; Remember, cond clauses have one or more expressions in each clause.
+
+;; that evaluates conditionals properly. Remember, a cond has a list of arguments.  They are cond-clauses.  Each cond-clause is a list of expressions.  The first one is treated like a conditional in if-then-else statements.  If the first one evaluates to non-nil, then evaluate the rest and return the value of the last one (using MY-EVAL-LIST).
+
+(defun my-eval-cond (clauses alist)
+;; clauses = ((nil 2 3 4 5 1) (t 1 3 4 2) (t 1 3 4 5 3))
+;; (caar clauses) = nil = car of the car
+;; (cdar clauses) = (2 3 4 5 1) = cdr of the car
+;; (cdr clauses) = ((T 1 3 4 2) (T 1 3 4 5 3))
+
+    (cond 
+        ( (null clauses) nil ) ;; reached the end of the clauses
+        ( (my-eval (caar clauses) alist) (my-eval-list (cdar clauses) alist) ) ;; if conditional is true, evaluate the expressions in the clause
+        ( t (my-eval-cond (cdr clauses) alist) ) ;; if conditional is not true, recurse on the remaining clauses
+    ) 
+)
+
+;; You need to write this one.
+;; Hint: just push the function body onto the global alist.  It is already an
+;; association, e.g., (equal (L1 L2) (cond (...))) and (assoc 'equal in
+;; the global alist will return this.  You can then take the cdr and you
+;; have a list containing the formal parameters and the expressions in
+;; the function body. defun returns the name of the function.
+
+; Write MY-EVAL-DEFUN that adds a function definition to the global alist used by MY-TOP (#12 below) and returns the name of the function being defined. The function definitions must be added to the global alist using SETQ. Return the name of the newly defined function.
+
+;; adds function definition to global-alist and returns the name
+;; of the function being defined. use SETQ to add the function definition
+;; return the name of the defined function
+
+(defun my-eval-defun (body alist)
+    ;; QUESTION: is it just body (which would have both the function name and the definition) or is it (cdr body)
+    ( setq global-alist (cons (cons (car body) (cdr body)) global-alist) )
+    ( car body ) ;; return name of the function (i.e. the first element of the body)
+)
+
+;; This one is done, it just initializes the global alist where global
+;; settings, like those defined via setq and defun, go.
+
+(defvar global-alist nil)
+
+;; to push a new value, (setq global-alist (cons (cons 'newvar 'newval) global-alist))
+
+;; This one is done, it will become the new top-level for LISP.  After you
+;; load this file, call (my-top) and then you can type in expressions and
+;; define and call functions to test your my-eval. Note it uses the prog which
+;; allows defining local variables, labels and goto looping similar to features
+;; found in imperative languages.
+
+(defun my-top ()
+    (prog ()
+        top
+            ;; read an s-expression, evaluate it using my-eval passing in the global-alist,
+            ;; then print the result, functions and global variables will be on global-alist
+
+            (print (my-eval (read) global-alist))
+            (terpri) ;; prints a newline
+            (go top) ;; loops forever
+    )
+)
+
+
