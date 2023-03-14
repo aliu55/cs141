@@ -1,7 +1,5 @@
 // ASHLEY LIU ashlel13
 
-import com.sun.tools.javac.Main;
-
 import static java.lang.Thread.sleep;
 import java.io.*;
 import java.util.Hashtable;
@@ -128,7 +126,7 @@ class Printer {
             myWriter.write("\n");
             myWriter.flush();
             myWriter.close();
-            sleep(2750);
+            sleep(275);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -164,7 +162,7 @@ class Disk {
     void write(StringBuffer data) throws InterruptedException {
         sectors[nextFreeSector] = data;
         nextFreeSector++;
-        sleep(800);
+        sleep(80);
     }
 
     /**
@@ -172,7 +170,7 @@ class Disk {
      */
     void read(int sector, StringBuffer data) throws InterruptedException {
         data.append(sectors[sector]);
-        sleep(800);
+        sleep(80);
     }
 
     int getNextFreeSector() {
