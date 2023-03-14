@@ -13,6 +13,11 @@ all.tar: gen
 clean:
 	/bin/rm -f gen *.class 141OS.jar USER* alt141OS.jar
 
+run: MainClass.java
+	javac MainClass.java
+	jar cmvf MANIFEST.MF 141OS.jar  *.class
+	java -jar 141OS.jar -26 -2 -3
+
 141OS.jar: MainClass.java
 	javac MainClass.java
 	jar cmvf MANIFEST.MF 141OS.jar  *.class
